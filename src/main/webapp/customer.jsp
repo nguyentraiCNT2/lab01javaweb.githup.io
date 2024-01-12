@@ -15,7 +15,11 @@
 <body>
 
 <h1>Customer List</h1>
-
+<form action="CustomerServlet" method="get">
+    <label for="search">Search by Name:</label>
+    <input type="text" id="search" name="search">
+    <input type="submit" value="Search">
+</form>
 <table border="1">
     <tr>
         <th>Customer ID</th>
