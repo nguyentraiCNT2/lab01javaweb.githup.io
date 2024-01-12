@@ -24,9 +24,9 @@ public class ProductServlet extends HttpServlet {
             String user = "sa";
             String password = "1412";
 
-            try {
+            try {Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+
                 Connection connection = DriverManager.getConnection(url, user, password);
-                Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
                 String action = request.getParameter("action");
 
@@ -48,6 +48,39 @@ public class ProductServlet extends HttpServlet {
                     // Xử lý xóa sản phẩm
                     int productId = Integer.parseInt(request.getParameter("id"));
                     deleteProduct(response, connection, productId);
+                } else if (action.equals("add")) {
+                    // Hiển thị form thêm mới
+                    addProductForm(out, connection);
+                } else if (action.equals("insert")) {
+                    // Xử lý thêm mới
+                    insertProduct(request, response, connection);
+                }
+
+                connection.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        try (PrintWriter out = response.getWriter()) {
+            String url = "jdbc:sqlserver://DESKTOP-MOTUJCG\\SQLSERVER;databaseName=productSample";
+            String user = "sa";
+            String password = "1412";
+
+            try {
+                Connection connection = DriverManager.getConnection(url, user, password);
+
+                String action = request.getParameter("action");
+
+                if ("update".equals(action)) {
+                    updateProduct(request, response, connection);
+                } else if ("insert".equals(action)) {
+                    insertProduct(request, response, connection);
                 }
 
                 connection.close();
@@ -96,6 +129,7 @@ public class ProductServlet extends HttpServlet {
             }
 
             out.println("</table>");
+            out.println("<p><a href='ProductServlet?action=add'>Add Product</a></p>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -147,7 +181,6 @@ public class ProductServlet extends HttpServlet {
         }
     }
 
-
     private void editProductForm(PrintWriter out, Connection connection, int productId) throws Exception {
         String sqlQuery = "SELECT * FROM product WHERE ProID = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sqlQuery)) {
@@ -197,6 +230,70 @@ public class ProductServlet extends HttpServlet {
             }
         }
     }
+
+    private void addProductForm(PrintWriter out, Connection connection) throws Exception {
+        out.println("<!DOCTYPE html>");
+        out.println("<html>");
+        out.println("<head>");
+        out.println("<title>Add Product</title>");
+        out.println("</head>");
+        out.println("<body>");
+        out.println("<h1>Add Product</h1>");
+
+        // Hiển thị form thêm mới
+        out.println("<form action='ProductServlet?action=insert' method='post'>");
+        out.println("<p><label>Product Name:</label> <input type='text' name='name'></p>");
+        out.println("<p><label>Product Description:</label> <input type='text' name='desc'></p>");
+        out.println("<p><label>Product Date:</label> <input type='text' name='date'></p>");
+        out.println("<p><label>Product Quantity:</label> <input type='text' name='qty'></p>");
+        out.println("<p><label>Product Price:</label> <input type='text' name='price'></p>");
+        out.println("<p><label>Product Image:</label> <input type='text' name='image'></p>");
+        out.println("<p><label>Product Status:</label> <input type='text' name='status'></p>");
+        out.println("<p><label>Product Warranty:</label> <input type='text' name='warranty'></p>");
+        out.println("<p><label>Category ID:</label> <input type='text' name='categoryId'></p>");
+        out.println("<p><input type='submit' value='Add'></p>");
+        out.println("</form>");
+
+        out.println("<p><a href='ProductServlet'>Back to Product List</a></p>");
+        out.println("</body>");
+        out.println("</html>");
+    }
+
+    private void insertProduct(HttpServletRequest request, HttpServletResponse response, Connection connection) throws Exception {
+        // Lấy thông tin từ request
+        String proName = request.getParameter("name");
+        String proDesc = request.getParameter("desc");
+        String proDate = request.getParameter("date");
+        int proQty = Integer.parseInt(request.getParameter("qty"));
+        double proPrice = Double.parseDouble(request.getParameter("price"));
+        String proImage = request.getParameter("image");
+        int proStatus = Integer.parseInt(request.getParameter("status"));
+        int proWarranty = Integer.parseInt(request.getParameter("warranty"));
+        int cateID = Integer.parseInt(request.getParameter("categoryId"));
+
+        // Thực hiện câu lệnh SQL INSERT
+        String insertQuery = "INSERT INTO product (ProName, ProDesc, ProDate, ProQty, ProPrice, ProImage, ProStatus, ProWarranty, CateID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertQuery)) {
+            preparedStatement.setString(1, proName);
+            preparedStatement.setString(2, proDesc);
+            preparedStatement.setString(3, proDate);
+            preparedStatement.setInt(4, proQty);
+            preparedStatement.setDouble(5, proPrice);
+            preparedStatement.setString(6, proImage);
+            preparedStatement.setInt(7, proStatus);
+            preparedStatement.setInt(8, proWarranty);
+            preparedStatement.setInt(9, cateID);
+
+            int rowsInserted = preparedStatement.executeUpdate();
+
+            if (rowsInserted > 0) {
+                response.sendRedirect("ProductServlet");
+            } else {
+                response.getWriter().println("Insert failed.");
+            }
+        }
+    }
+
     private void updateProduct(HttpServletRequest request, HttpServletResponse response, Connection connection) throws Exception {
         // Lấy thông tin từ request
         int productId = Integer.parseInt(request.getParameter("id"));
@@ -249,5 +346,5 @@ public class ProductServlet extends HttpServlet {
             }
         }
     }
-
 }
+
